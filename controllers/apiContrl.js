@@ -1,7 +1,7 @@
 // Api Contollers
 'use strict';
 var config = require("../_core/config");
-// var apiConnectionService = require("../services/apiConnectionService");
+var apiConnectionService = require("../services/apiConnectionService");
 // var Model = require("../models/model");
 var ApiController = {};
 var session = {};
