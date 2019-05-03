@@ -2,7 +2,7 @@
 'use strict';
  
 var express = require('express');
-// var ApiController  = require('../controllers/apiContrl');
+var ApiController  = require('../controllers/apiContrl');
 // Sett Routing 
 var router = express.Router();
 
