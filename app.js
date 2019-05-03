@@ -12,7 +12,7 @@ var enforce = require('express-sslify');
 
 const initAuthMiddleware = require('./features/login/init-auth-middleware');
 const indexRouter = require('./routes/index');
-var apiRouter = require('./routes/api');
+// var apiRouter = require('./routes/api');
 const redisStoreConfig = {
   host: process.env.REDIS_HOST,
   port: process.env.REDIS_PORT,
@@ -77,7 +77,7 @@ app.use((req, res, next) => {
 
 app.use('/', indexRouter);
 // Bundle API routes.
-app.use('/api', apiRouter);
+// app.use('/api', apiRouter);
 
 
 // catch 404 and forward to error handler
