@@ -3,7 +3,7 @@
   
 var config = require('../_core/config');
 // var threadService = require('../models/thread');
-// var { StaticPool  } = require('node-worker-threads-pool');
+var { StaticPool  } = require('node-worker-threads-pool');
 // var Client = require('instagram-private-api').V1;
 // var storage = new Client.CookieFileStorage('./_core/someuser.json');
 var globalsession = {};
