@@ -1,13 +1,11 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const Bot = sequelize.define('Bot', {
-    userid: DataTypes.STRING,
+    user_id: DataTypes.INTEGER,
     botname: DataTypes.STRING,
-    accountname: DataTypes.STRING,
+    name: DataTypes.STRING,
     password: DataTypes.STRING,
-    image: DataTypes.STRING,
     delay: DataTypes.INTEGER,
-    max: DataTypes.INTEGER,
     filters: DataTypes.STRING,
     status: DataTypes.INTEGER
   }, {});
@@ -18,14 +16,24 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     Bot.hasMany(models.Comment, {
-      foreignKey: 'botid',
-      as: 'comments'
+      foreignKey: 'bot_id',
+      as: 'comment'
     });
 
     Bot.hasMany(models.Reply, {
-      foreignKey: 'botid',
-      as: 'replies'
-    })
+      foreignKey: 'bot_id',
+      as: 'reply'
+    });
+
+    Bot.hasMany(models.Setting, {
+      foreignKey: 'bot_id',
+      as: 'setting'
+    });
+
+    Bot.hasMany(models.ResponseHistory, {
+      foreignKey: 'id',
+      as: 'responsehistory'
+    });
   };
   return Bot;
 };

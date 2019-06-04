@@ -1,309 +1,364 @@
-/**
- * @description Bot Controller library.
- * @name botController.js
- * @version 1.1.2
- * @author Super-Sean1995
- */
+// Bot controller
 'use strict';
-// Import npm modules.
+
 var fork = require('child_process').fork,
     path = require('path');
 
-// Import project modules.
-var BotService = require('../services/botService');
-var BotModel = require('../models').Bot;
-var CommentModel = require('../models').Comment;
-var ReplyModel = require('../models').Reply;
+var BotService = require('../services/botService'),
+    BotModel = require('../models').Bot,
+    CommentModel = require('../models').Comment,
+    ReplyModel = require('../models').Reply,
+    SettingModel = require('../models').Setting;
 
-// Define Bot controller.
+
+/**
+ * Global variables to set the bot.
+ * all of these variables had been initialized from logic.
+ */
 var BotController = {};
 var arrBotProcess = [];
 var arrBotProcessName = [];
 var arrBotProcessBackup = [];
 var arrBotProcessNameBackup = [];
-
 var botNum = 0;
-
 /**
- * @description 
- * Validate Bot function before create new bot.
- * 
- * @param {OBJECT} req
- * @param {OBJECT} res
- */
-BotController.validateBot = function(req, res) {
-    BotService.validateBot(req.body.userName, req.body.password, function(cb) {
-        if(cb.flag == false) {
-            switch(cb.type) {
-                case 'CheckpointError':
-                    res.status(404).json({
-                        flag: false,
-                        message: 'You need to login your user'
-                    });
-
-                    break;
-                case 'AuthenticationError':
-                    res.status(404).json({
-                        flag: false,
-                        message: 'Authentication Error, Please retype your user detail.'
-                    });
-                    
-                    break;
-                case 'CreateError':
-                    res.status(404).json({
-                        flag: false,
-                        message: 'Creating Session Error.'
-                    });
-
-                    break;
-            }
-        } else {
-            var newBotData = {
-                userid: req.session.user.id,
-                botname: req.body.botName,
-                accountname: req.body.userName,
-                password: req.body.password,
-                image: cb.image,
-                delay: req.body.delay,
-                status: 0
-            }
-
-            BotModel.create(newBotData)
-                .then(function(bot) {
-                    res.status(201).json({
-                        flag: true,
-                        message: 'Successfully created your bot!',
-                        botId: bot.dataValues.id
-                    });
-                })
-                .catch(function(error) {
-                    console.log('Insert new bot error: ' + error);
-                });
-        }
-    });
-}
-
-/**
- * @description 
- * Save filters to bot table.
- * 
- * @param {OBJECT} req
- * @param {OBJECT} res
- */
-BotController.saveFilters = function(req, res) {
-    console.log(req.body);
-    var updateBotData = {
-        filters: JSON.stringify(req.body.filters)
-    }
-
-    BotModel.update(updateBotData, {
-        where: {
-            id: req.body.botId
-        }
-    }).then(function(response) {
-        if(response[0] == 1) {
-            res.status(201).json({
-                flag: true,
-                message: 'Successfully updated your bot filters'
-            });
-        }
-    }).catch(function(error) {
-        console.log('Update bot filters error: ' + error);
-    });
-}
-
-/**
- * @description 
- * Save Comments to commit the post with botId in comments table.
- * 
- * @param {OBJECT} req
- * @param {OBJECT} res
- */
-BotController.addComment = function(req, res) {
-    var newComment = {
-        botid: req.body.botId,
-        comment: req.body.comment
-    }
-
-    CommentModel.create(newComment)
-        .then(function(comment) {
-            res.status(201).json({
-                flag: true,
-                message: 'Added your comment!',
-                comment: comment.dataValues.comment
-            });
-        })
-        .catch(function(error) {
-            console.log('Insert new comment error' + error);
-        });
-}
-
-/**
- * @description 
- * Save Reply message to message the post with botId in Replies table.
- * 
- * @param {OBJECT} req
- * @param {OBJECT} res
- */
-BotController.addMessage = function(req, res) {
-    var newReply = {
-        botid: req.body.botId,
-        message: req.body.message
-    }
-
-    ReplyModel.create(newReply)
-        .then(function(reply) {
-            res.status(201).json({
-                flag: true,
-                message: 'Added your message!',
-                reply: reply.dataValues.message
-            });
-        })
-        .catch(function(error) {
-            console.log('Insert new reply message error: ' + error);
-        });
-}
-
-/**
- * @description 
- * Set max count of comments per daily of bot with botId in Bot table.
- * 
- * @param {OBJECT} req
- * @param {OBJECT} res
- */
-BotController.setCountMaxComment = function(req, res) {
-    var updateData = {
-        max: parseInt(req.body.maxCommentDaily)
-    }
-
-    BotModel.update(updateData, {
-        where: {
-            id:  req.body.botId
-        }
-    }).then(function(response) {
-        if(response[0] == 1) {
-            res.status(201).json({
-                flag: true,
-                message: 'Set your max counts of comment per day!'
-            });
-        }
-    }).catch(function(error) {
-        console.log('Set max count of comments per daily of bot error ' + error);
-    });
-}
-
-/**
- * @description 
- * Create new bot using botId.
- * 
- * @param {OBJECT} req
- * @param {OBJECT} res
+ * create new bot using thread.
+ * @param {object} req
+ * @param {object} res
  */
 BotController.createNewBot = function(req, res) {
     if(!req.body.botId) {
         res.status(404).json({
             flag: false,
-            message: 'Invalid create new bot. Try again!'
+            message: 'Invalid server connection.'
         });
     } else {
-        BotModel.findOne({
-            where: {
-                id: req.body.botId
-            }
-        }).then(function(bot) {
-            if(bot) {
-                var sendData = {
-                    botId: bot.dataValues.id,
-                    name: bot.dataValues.accountname,
-                    password: bot.dataValues.password,
-                    delayTime: bot.dataValues.delay,
-                    maxCommentDaily: bot.dataValues.max,
-                    filters: bot.dataValues.filters
-                }
+        var botId = req.body.botId,
+            potentialBotId = { where: { id: botId } };
 
-                arrBotProcess.push(fork(path.join(__dirname, 'newBotProcess.js')));
-                arrBotProcessName.push(bot.dataValues.id);
-
-                arrBotProcess[botNum].on('message', function(data) {
-                    if(data == 1) {
-                        var updateData = {
-                            status: 1
+        var updateBotData = {
+            status: 1
+        }
+        
+        BotModel.update(updateBotData, potentialBotId)
+            .then(function(response) {
+                if(response[0] == 1) {
+                    // Fetch bot setting => max comments count.
+                    SettingModel.findAll({
+                        where: {
+                            bot_id: botId
                         }
+                    }).then(function(settings) {
+                        var maxDailyComment;
 
-                        BotModel.update(updateData, {
+                        for(var obj of settings) {
+                            maxDailyComment = obj.dataValues.max_comment_daily;
+                        }
+                        
+                        console.log(maxDailyComment);
+                        // Fetch Bot Detail => delay
+                        BotModel.findAll({
                             where: {
-                                id: bot.dataValues.id
+                                id: botId
                             }
-                        }).then(function(response) {
-                            if(response[0] == 1) {
-                                botNum = botNum + 1;
-
-                                res.status(201).json({
-                                    flag: true,
-                                    message: 'Successfully, created your bot!'
-                                });
-                            } else {
-                                res.status(404).json({
-                                    flag: false,
-                                    message: 'Invalid create new bot. Try again!'
-                                });
+                        }).then(function(bot) {
+                            var delay;
+                            for(var obj of bot) {
+                                delay = obj.dataValues.delay;
                             }
-                        }).catch(function(error) {
-                            console.log('Update bot status error: ' +  error);
-                        });
-                    }
-                });
 
-                arrBotProcess[botNum].send(sendData);
+                            var sendData = {
+                                botId: req.body.botId,
+                                delayTime: delay,
+                                maxDailyComment: maxDailyComment
+                            }
+                            
+                            arrBotProcess.push(fork(path.join(__dirname, 'newBotProcess.js')));
+                            arrBotProcessName.push(botId);
 
-            } else {
-                res.status(404).json({
-                    flag: false,
-                    message: 'Invalid create new bot. Try again!'
+                            arrBotProcess[botNum].on('message', function(data) {
+                                if(data == 1) {
+                                    res.status(201).json({
+                                        flag: true,
+                                        message: 'Created your Bot perfectly'
+                                    });
+
+                                } else {
+                                    res.status(404).json({
+                                        flag: false,
+                                        message: 'Invalid create bot'
+                                    });  
+                                }
+                            });
+                            
+                            arrBotProcess[botNum].send(sendData);
+                            botNum = botNum + 1;
+
+                    }).catch(function(error) {
+                        console.log('Fetch Bot Detail Error: ' + error);
+                    })
+                }).catch(function(error) {
+                    console.log('Fetch Bot Setting Error: ' + error);
                 });
+                
             }
-
-        }).catch(function(error) {
-            console.log('Fetch bot detail error: ' + error);
+        })
+        .catch(function(error) {
+            console.log('Create new bot error: ' + error);
         });
     }
 }
 
 /**
- * @description 
- * Get bot clear Details.
- * 
- * @param {OBJECT} req
- * @param {OBJECT} res
+ * validate user to create new user.
+ * @param {object} req
+ * @param {object} res
  */
-BotController.getLoadMoreDetails = function(req, res) {
-    var userId = req.body.userId,
-        botId = req.body.botId;
-
-    BotService.getLoadMore(userId, botId, function(cb) {
-        res.status(201).json({
-            flag: true,
-            data: cb
+BotController.validateBot = function(req, res) {
+    if(!req.body.botName || !req.body.userName || !req.body.password) {
+        res.status(404).json({
+            flag: false,
+            message: 'Invalid server connection.'
         });
-    });
+    } else {
+        var botName = req.body.botName,
+            name = req.body.userName,
+            password = req.body.password,
+            delay = req.body.delay;
+
+        BotService.validateBot(name, password, function(callback) {
+            if(callback.flag == false) {
+                switch(callback.type) {
+                    case 'CheckpointError':
+                        res.status(404).json({
+                            flag: false,
+                            message: 'You need to login your user'
+                        });
+
+                        break;
+                    case 'AuthenticationError':
+                        res.status(404).json({
+                            flag: false,
+                            message: 'Authentication Error, Please retype your user detail.'
+                        });
+                        
+                        break;
+                    case 'CreateError':
+                        res.status(404).json({
+                            flag: false,
+                            message: 'Creating Session Error.'
+                        });
+
+                        break;
+                }
+            } else {
+                var newBotData = {
+                    user_id: 1,
+                    botname: botName,
+                    name: name,
+                    password: password,
+                    delay: delay,
+                    status: 0
+                }
+                BotModel.create(newBotData)
+                    .then(function(bot) {
+                        res.status(201).json({
+                            flag: true,
+                            message: 'Successfully validated your bot.',
+                            botId: bot.dataValues.id
+                        });
+                    })
+                    .catch(function(error) {
+                        console.log('Save new bot error: ' + error);
+                    });
+            }
+        });
+
+    }
+    
 }
 
 /**
- * @description 
- * Delete bot by botId
- * 
- * @param {OBJECT} req
- * @param {OBJECT} res
+ * saveFilters with bot_id, user_id
+ * @param {object} req
+ * @param {object} res
+ */
+BotController.saveFilters = function(req, res) {
+    if(req.body.botId == 0 || !req.body.filters) {
+        res.status(404).json({
+            flag: false,
+            message: 'Invalid server connection.'
+        });
+    } else {
+        var botId = req.body.botId,
+            filters = req.body.filters,
+            potentialBotId = { where: { id : botId} };
+        
+        var updateBotData = {
+            filters: JSON.stringify(filters)
+        }
+
+        BotModel.update(updateBotData, potentialBotId)
+            .then(function(response) {
+                if(response[0] == 1) {
+                    res.status(201).json({
+                        flag: true,
+                        message: 'Successfully updated your bot with filters.',
+                        botId: botId
+                    });
+                }
+            })
+            .catch(function(error) {
+                console.log('Update bot data error: ' + error);
+            });
+    }
+}
+
+/**
+ * add comment with bot_id
+ * @param {object} req
+ * @param {object} res
+ */
+BotController.addComment = function(req, res) {
+    if(!req.body.botId) {
+        res.status(404).json({
+            flag: false,
+            message: 'Invalid add comment'
+        });
+    } else {
+        var botId = req.body.botId,
+            comment = req.body.comment;
+
+        var newComment = {
+            bot_id: botId,
+            comment: comment
+        }
+
+        CommentModel.create(newComment)
+            .then(function(comment) {
+                if(comment) {
+                    res.status(201).json({
+                        flag: true,
+                        message: 'Added your comment correctly!',
+                        comment: comment.dataValues.comment,
+                        botId: botId
+                    });
+                } else {
+                    res.status(404).json({
+                        flag: false,
+                        message: 'Invalid add comment'
+                    });
+                }
+            })
+            .catch(function(error) {
+                console.log('Save comment error: ' + error);
+            });
+    }
+    
+}
+
+/**
+ * add message to reply databse
+ * @param {object} req
+ * @param {object} res
+ */
+BotController.addReply = function(req, res) {
+    console.log(req.body.botId);
+    if(!req.body.message) {
+        res.status(404).json({
+            flag: false,
+            message: 'Invalid add message'
+        });
+    } else {
+        var botId = req.body.botId,
+            message = req.body.message;
+
+        var newReply = {
+            bot_id: botId,
+            message: message
+        }
+
+        ReplyModel.create(newReply)
+            .then(function(message) {
+                if(message) {
+                    res.status(201).json({
+                        flag: true,
+                        message: 'Added your comment correctly!',
+                        reply: message.dataValues.message,
+                        botId: botId
+                    });
+                } else {
+                    res.status(404).json({
+                        flag: false,
+                        message: 'Invalid add comment'
+                    });
+                }
+            })
+            .catch(function(error) {
+                console.log('Save replies error: ' + error);
+            });
+    }
+}
+
+/**
+ * set setting to settings table.
+ * @param {object} req
+ * @param {object} res
+ */
+BotController.setSettings = function(req, res) {
+    if(!req.body.botId) {
+        res.status(404).json({
+            flag: false,
+            message: 'Invalid to update your setting.'
+        });
+    } else {
+        var botId = req.body.botId,
+            maxCommentDaily = req.body.maxCommentDaily,
+            potentialBotId = { where: { bot_id: botId}};
+
+        var upsertSettingData = {
+            bot_id: botId,
+            max_comment_daily: maxCommentDaily
+        }
+
+        SettingModel.upsert(upsertSettingData, potentialBotId)
+            .then(function(setting) {
+                if(setting) {
+                    res.status(201).json({
+                        flag: true,
+                        message: 'Changed your setting correctly!',
+                        maxCommentDaily: maxCommentDaily,
+                        botId: botId
+                    });
+                } else {
+                    res.status(404).json({
+                        flag: false,
+                        message: 'Invalid add comment'
+                    });
+                }
+            })
+            .catch(function(error) {
+                console.log('Save Settings error: ' + error);
+            });
+    }
+}
+
+/**
+ * delete bot by ID.
+ * @param {object} req
+ * @param {object} res
  */
 BotController.deleteBotById = function(req, res) {
-    if(req.body.botId) {
+    console.log(req.body);
+    if(req.body.id) {
+        var potentialBotId = { where: { id: req.body.id } };
+
         var updateBotData = {
             status: 0
         }
-       
-        for(var i = 0; i < arrBotProcessName.length; i++) {    
-           
-            if(arrBotProcessName[i] == req.body.botId) {
+
+        for(var i = 0; i < arrBotProcessName.length; i++) {
+            if(arrBotProcessName[i] == req.body.id) {
                 arrBotProcess[i].kill();
                 arrBotProcessName[i] = "###";
             }
@@ -324,7 +379,6 @@ BotController.deleteBotById = function(req, res) {
                 arrBotProcessNameBackup.push(arrBotProcessName[kk]);
             }                            
         }
-        
         /**
          * initialize and copy original thread array for bots with backup arraylist
          */
@@ -334,23 +388,150 @@ BotController.deleteBotById = function(req, res) {
         arrBotProcess = arrBotProcessBackup.slice(0);
         arrBotProcessName = arrBotProcessNameBackup.slice(0);
 
-        BotModel.update(updateBotData, {
-            where: {
-                id: req.body.botId,
-                userid: req.body.userId
-            }
-        }).then(function(response) {
-            if(response[0] == 1) {
+        BotModel.update(updateBotData, potentialBotId)
+            .then(function(response) {
+                console.log(response[0]);
                 res.status(201).json({
                     flag: true,
                     message:'Successfully deleted'
                 });
-            }
-        }).catch(function(error) {
-            console.log('Delete Bot Error: ' + error);
-        });
+            })
+            .catch(function(error) {
+                console.log('Delete Bot Error: ' + error);
+            });
     }
 }
 
-// Export BotController.
+/**
+ * update bot all details.
+ * @param {OBJECT} req
+ * @param {OBJECT} res
+ */
+BotController.updateBotAllDetails = function(req, res) {
+    console.log(req.body);
+
+    var botId = req.body.botId,
+        botName =  req.body.botName,
+        accountName = req.body.accountName,
+        delay = req.body.delay,
+        password = req.body.password,
+        arrFilter = req.body.arrFilter,
+        arrReply = req.body.arrReply,
+        arrComment = req.body.arrComment,
+        potentialBotId = { where: { bot_id: botId } };
+
+    var updateBotData = {
+        botname: botName,
+        name: accountName,
+        password: password,
+        delay: delay,
+        filters: arrFilter
+    }
+
+    BotModel.update(updateBotData, potentialBotId)
+        .then(function(response) {
+            if(response[0] == 1) {
+                res.status(200).json({
+                    flag: true,
+                    message: 'Succesfully updated your bot details'
+                });
+            } else {
+                res.status(404).json({
+                    flag: false,
+                    message: 'Invalid database connection!'
+                });
+            }
+        })
+        .catch(function(error) {
+            if(error) {
+                console.log('Update Bot detail error: ' + error);
+            }
+        });
+
+    BotService.getCommentAllDataByBotId(botId, function(comments) {
+        for(var obj of comments) {
+            CommentModel.destroy({
+                where: {
+                    id: obj.id
+                }
+            })
+            .then(function(result) {
+                if(result == 1) {
+                    console.log('deleted!');
+                }
+            })
+            .catch(function(error) {
+                console.log('Delete current row error: ' + error);
+            })
+        }
+    });
+
+    arrComment.forEach(element => {
+        var newCommentRow = {
+            bot_id: botId,
+            comment: element[i]
+        }
+
+        console.log(newCommentRow);
+
+        CommentModel.create(newCommentRow)
+            .then(function(commentResponse) {
+                console.log(commentResponse.dataValues);
+            })
+            .catch(function(error) {
+                console.log('Create new Row at comment error: ' + error);
+            })
+    });
+
+    BotService.getDirectMessageByBotId(botId, function(replies) {
+        for(var obj of replies) {
+            ReplyModel.destroy({
+                where: {
+                    id: obj.id
+                }
+            })
+            .then(function(result) {
+                if(result == 1) {
+                    console.log('deleted!');
+                }
+            })
+            .catch(function(error) {
+                console.log('Delete current row error: ' + error);
+            })
+        }
+    });
+
+    arrReply.forEach(element => {
+        var newReplyRow = {
+            bot_id: botId,
+            message: element
+        }
+
+        console.log(newReplyRow);
+
+        ReplyModel.create(newReplyRow)
+            .then(function(replyResponse) {
+                console.log(replyResponse.dataValues);
+            })
+            .catch(function(error) {
+                console.log('Create new Row at reply error: ' + error);
+            });
+    });
+}
+
+
+/**
+ * 
+ * @param {OBJECT} req
+ * @param {OBJECT} res
+ */
+BotController.getBotDirectMessageHistroy = function(req, res) {
+    var botId = req.body.botId,
+        clientId = req.body.clientId;
+
+    BotService.getBotDirectMessageHistroy(botId, clientId, function(callback) {
+        res.status(201).json(callback);
+    });
+}
+
 module.exports = BotController;

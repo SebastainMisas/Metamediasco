@@ -1,51 +1,45 @@
-/**
- * @description Bot Service library.
- * @name botService.js
- * @version 1.1.2
- * @author Super-Sean1995
- */
-
+// Bot Service.
 'use strict';
-// Import npm modules.
 var Client = require('instagram-private-api').V1,
     path = require('path'),
     _ = require('lodash'),
-    Promise = require('bluebird'),
-    Sequelize = require('sequelize');
+    Promise = require('bluebird');
 
-var sequelize = new Sequelize('postgres://cdzrjuzfpkrdrr:5795b125100f1b26f152b4d43d07202b45487a4478149845610359cb9e0a2d43@ec2-75-101-131-79.compute-1.amazonaws.com:5432/d78ji1bpom3vn5');
-var BotModel = require('../models').Bot;
-var ReplyModel = require('../models').Reply;
-var CommentModel = require('../models').Comment;
-var RepliesHistoryModel = require('../models').RepliesHistory;
-var CommentHistoryModel = require('../models').CommentHistory;
+var Sequelize = require('sequelize');
+var sequelize = new Sequelize('postgres://postgres:Rango941001top@@@@localhost:5433/instagram_dm_bot');
 
-// Definition Bot Service module.
+var UserModel = require('../models').User,
+    BotModel = require('../models').Bot,
+    CommentModel = require('../models').Comment,
+    ReplyModel = require('../models').Reply,
+    ResponseHistory = require('../models').ResponseHistory,
+    SettingModel = require('../models').Setting;
+
+// Define Bot Service module.
 var BotService = {};
 
-// Define BotService Sub Functions.
 BotService.validateBot = validateBot;
-BotService.getAllBot = getAllBot;
-BotService.getLoadMore = getLoadMore;
-BotService.getInboxById = getInboxById;
-BotService.getMessageById = getMessageById;
-BotService.getCountOfReplyHistoriesById = getCountOfReplyHistoriesById;
-BotService.directMessageToClient = directMessageToClient;
-BotService.saveReplyHistory = saveReplyHistory;
-BotService.getMediaIdByHashTag = getMediaIdByHashTag;
+BotService.getBotDetail = getBotDetail; 
 BotService.getCommentByBotId = getCommentByBotId;
-BotService.commitByMediaId = commitByMediaId;
-BotService.saveCommentHistory = saveCommentHistory;
+BotService.getCommentAllDataByBotId = getCommentAllDataByBotId;
+BotService.getMediaIdByHashtag = getMediaIdByHashtag;
+BotService.commitPostsByMediaId = commitPostsByMediaId;
+BotService.getDirectMessageByBotId = getDirectMessageByBotId;
+BotService.getResposerDataFromInbox = getResposerDataFromInbox;
+BotService.replyToUserByRespnserId = replyToUserByRespnserId;
+BotService.getReplyDirectMessageHistoryByBotId = getReplyDirectMessageHistoryByBotId;
+BotService.storeReplyDirectMessageHistory = storeReplyDirectMessageHistory;
+BotService.getAllBotDetail = getAllBotDetail;
+BotService.getDashboardDetails = getDashboardDetails;
+BotService.getBotDirectMessageHistroy = getBotDirectMessageHistroy;
 
 /**
- * @description
- * Validate bot to create news with username and password using instagram api.
- * 
- * @param {STRING} name 
- * @param {STRING} password 
- * @param {OBJECT} cb 
+ * Validate Bot to create new bot with username and password.
+ * @param {string} name 
+ * @param {string} password 
+ * @param {object} callback 
  */
-function validateBot(name, password, cb) {
+function validateBot(name, password, callback) {
     var cookieFileURL = '../cookies/' + name + '.json',
         storage = new Client.CookieFileStorage(path.join(__dirname, cookieFileURL)),
         device = new Client.Device(name);
@@ -53,298 +47,141 @@ function validateBot(name, password, cb) {
     Client.Session.create(device, storage, name, password)
         .then(async function(session) {
             if(!session) {
-                cb({
+                callback({
                     flag: false,
                     type: 'CreateError'
                 })
             } else {
-                Client.Account.showProfile(session)
-                    .then(function(result) {
-                        cb({
-                            flag: true,
-                            type: 'Success',
-                            session: session,
-                            image: result.profile_pic_url
-                        });
-                       
-                    }).catch(function(error) {
-                        console.log('Fetch user picture error: ' + error);
-                    });
+                callback({
+                    flag: true,
+                    type: 'Success',
+                    session: session
+                });
             }
         })
         .catch(function(reject) {
-            console.log(reject);
-            cb({
+            callback({
                 flag: false,
                 type: reject.name
             });
         });
+
 }
 
 /**
- * @description
- * Get live bot details when open the allbots page.
- * 
- * @param {NUMBER} userId 
- * @param {OBJECT} cb 
+ * get current bot detail.
+ * @param {object} botId 
+ * @param {object} callback 
  */
-function getAllBot(userId,  cb) {
-    BotModel.findAndCountAll({
-        where: {
-            userid: userId.toString(),
-            status: '1'
-        }
-    }).then(function(result) {
-        cb({
-            rows: result.rows,
-            count: result.count
+function getBotDetail(botId, callback) {
+    var botId = botId,
+        potentialBotId = { where: { id: botId, status: 1 } };
+    
+    BotModel.findOne(potentialBotId)
+        .then(function(bot) {
+            callback(bot.dataValues);
         })
-    }).catch(function(error) {
-        console.log('Get lived bot detail error: ' + error);
-    });
-};
-
-/**
- * @description
- * Get Bot all Details by userId, and botid. 
- * 
- * @param {NUMBER} userId 
- * @param {NUMBER} botId 
- * @param {OBJECT} cb 
- */
-function getLoadMore(userId, botId, cb) {
-    var selectQuery = `SELECT  'comment' as type,
-                            a.id as botid,
-                            c.id as dataid,
-                            a.filters as filters,
-                            c.comment as data
-                        FROM 
-                            public."Bots" as a ,
-                            public."Comments" as c
-                        WHERE
-                            a.id = c.botid and 
-                            a.status = 1 and 
-                            a.userid = ? and
-                            a.id = ?
-
-                        UNION ALL
-
-                        SELECT  'reply',
-                            a.id,
-                            b.id ,
-                            a.filters,
-                            b.message
-                        FROM 
-                            public."Bots" as a ,
-                            public."Replies" as b
-                        WHERE
-                            a.id = b.botid and
-                            a.status = 1 and 
-                            a.userid = ? and
-                            a.id = ?`;
-    sequelize.query(selectQuery, {
-        replacements: [
-            userId,
-            botId,
-            userId,
-            botId
-        ]
-    }).then(function(result) {
-        var arrComment = [];
-        var arrReply = [];
-
-        for(var obj of result[0]) {
-            if(obj.type == 'comment') {
-                arrComment.push({id: obj.dataid, data: obj.data});
-            }
-
-            if(obj.type == 'reply') {
-                arrReply.push({id: obj.dataid, data: obj.data});
-            }
-        }
-        
-        var sendData = {
-            botId: result[0][1].botid,
-            comment: arrComment,
-            reply: arrReply,
-            filter: result[0][1].filters
-        }
-        
-        cb(sendData);
-
-        // Initialize array;
-        arrComment = [];
-        arrReply = [];
-    }).catch(function(error) {
-        console.log('Get LodMore Detail error: ' + error);
-    });
+        .catch(function(error) {
+            console.log('Get bot Detail by Id error: ' + error);
+        });
 }
 
 /**
- * @description
- * Get inbox data by botid.
- * 
- * @param {OBJECT} session 
- * @param {OBJECT} cb 
+ * get current bot's inputed comments.
+ * @param {object} botId 
+ * @param {array} callback 
  */
-function getInboxById(session, cb) {
-    var feed = new Client.Feed.Inbox(session);
+function getCommentByBotId (botId, callback) {
+    var botId = botId,
+        potentialBotId = { where: { bot_id: botId } };
 
-    var pFeed = new Promise(function(resolve) {
-        return resolve(feed.get());
-    });
+    CommentModel.findAll(potentialBotId)
+        .then(function(comments) {
+            var arrComments = [];
+            for (var obj of comments) {
+                arrComments.push(obj.dataValues.comment);
+            }
+            callback(arrComments);
 
-    pFeed.then(function(results) {
-        var countResult = results.length;
-        var accountId;
-        var message = '';
-        var clientId;
-        var imgUrl = '';
-        var arrSendData = [];
+            arrComments = [];
+        })
+        .catch(function(error) {
+            console.log('Get comment by id error: ' + error);
+        });
+}
 
-        async function getNewInbox() {
-            countResult--;
+/**
+ * 
+ * @param {*} botId 
+ * @param {*} callback 
+ */
+function getCommentAllDataByBotId(botId, callback) {
+    var botId = botId,
+    potentialBotId = { where: { bot_id: botId } };
 
-            results[countResult].items.forEach(function(item) {
-                message = item._params.text;
-                accountId = item._params.userId;
-            });
-
-            results[countResult].accounts.forEach(function(account) {
-                clientId = account.pk;
-                imgUrl = account.profile_pic_url;
-            });
-
-            if(accountId == clientId && message != undefined) {
-                var objSendData = {
-                    message: message,
-                    clientId: clientId
+    CommentModel.findAll(potentialBotId)
+        .then(function(comments) {
+            var arrComment = []
+            for(var obj of comments) {
+                var sendData = {
+                    id: obj.dataValues.id,
+                    comments: obj.dataValues.comment
                 }
 
-                arrSendData.push(objSendData);
+                arrComment.push(sendData);
             }
+            callback(arrComment);
 
-            if(countResult > 0) {
-                getNewInbox();
-            }
-        }
-        getNewInbox();
-
-        cb(arrSendData);
-
-        arrSendData = [];
-    });
-}
-
-/**
- * @description
- * Get Direct messages from database.
- * 
- * @param {INTEGER} botId 
- * @param {OBJECT} cb 
- */
-function getMessageById(botId, cb) {
-    ReplyModel.findAndCountAll({
-        where: {
-            botid: botId
-        }
-    }).then(function(result) {
-        var sendData = {
-            rows: result.rows,
-            count: result.count
-        }
-
-        cb(sendData);
-    }).catch(function(error) {
-        console.log('Get Reply messages error: ' + error);
-    });
-}
-
-/**
- * @description
- * Get Count of Reply histories by botid.
- * 
- * @param {INTEGER} botId 
- * @param {OBJECT} cb 
- */
-function getCountOfReplyHistoriesById(botId, cb) {
-    RepliesHistoryModel.findAndCountAll({
-        where: {
-            botid: botId
-        }
-    }).then(function(result) {
-        cb(result.count);
-    }).catch(function(error) {
-        console.log('Get Count of Reply Histories by BotID error: ' + error);
-    })
-}
-
-/**
- * 
- * @param {OBJECT} session 
- * @param {STRING} id 
- * @param {STRING} message 
- * @param {OBJECT} cb 
- */
-function directMessageToClient(session, id, message, cb) {
-    Client.Thread.configureText(session, id, message)
-        .then(function(result) {
-            var sendData = {
-                id: result[0].accounts[0].id,
-                name: result[0].accounts[0].username,
-                imgUrl: result[0].accounts[0].profile_pic_url
-            }
-
-            cb(sendData);
+            arrComment = [];
         })
         .catch(function(error) {
-            console.log('Direct Message Error: ' + error);
+            console.log('Get comment by id error: ' + error);
         });
 }
 
 /**
- * @description
- * Save all Reply history.
- * 
- * @param {OBJECT} data 
- * @param {OBJECT} cb 
+ * get Replies from database.
+ * @param {integer} botId 
+ * @param {array} callback 
  */
-function saveReplyHistory(data, cb) {
-    var newHistory = {
-        botid: data.botId,
-        clientid: data.clientId,
-        clientname: data.clientName,
-        image: data.imageUrl,
-        message: data.message,
-        replyid: data.replyId
-    }
+function getDirectMessageByBotId(botId, callback) {
+    var botId = botId;
 
-    RepliesHistoryModel.create(newHistory)
-        .then(function(history) {
-            if(history) {
-                cb({
-                    id: history.dataValues.id
-                });
+    ReplyModel.findAll({
+            where: { 
+                bot_id: botId 
             }
         })
+        .then(function(replies) {
+            var arrReplies = [];
+            for(var obj of replies) {
+                var sendData = {
+                    id: obj.dataValues.id,
+                    message: obj.dataValues.message
+                }
+                arrReplies.push(sendData);
+            }
+
+            callback(arrReplies);
+
+            arrReplies = [];
+        })
         .catch(function(error) {
-            console.log('Create new history error: ' + error);
+            console.log('Get message by id error: ' + error);
         });
 }
 
 /**
- * @description
- * Get media id by hashtag from api
- * 
- * @param {OBJECT} session 
- * @param {STRING} hashTag 
- * @param {OBJECT} cb 
+ * get media_id with hashtag.
+ * @param {string} hashtag 
+ * @param {array} callback 
  */
-function getMediaIdByHashTag(session, hashTag, cb) {
+function getMediaIdByHashtag(session, hashtag, callback) {
     var arrMediaId = [];
-    var feed = new Client.Feed.TaggedMedia(session, hashTag);
+    var hashtag = hashtag;
+    var feed = new Client.Feed.TaggedMedia(session, hashtag);
 
-    var pFeed = new Promise(function(resolve) {
+    var pFeed = new Promise(function(resolve, reject) {
         return resolve(feed.get());
     });
 
@@ -353,85 +190,331 @@ function getMediaIdByHashTag(session, hashTag, cb) {
             arrMediaId.push(obj.caption.media_id);
         }
 
-        cb(arrMediaId);
+        callback(arrMediaId);
 
         arrMediaId = [];
-    }).catch(function(error) {
-        console.log('Get Media Id by hashTag error: ' + error);
     });
 }
 
 /**
- * @description
- * Get comment list by botid from table.
+ * commit Posts using comments busing media_id.
+ * @param {object} session 
+ * @param {string} media_id
+ * @param {string} comment 
+ * @param {flag} callback 
+ */
+function commitPostsByMediaId(session, media_id, comment, callback) {
+    Client.Comment.create(session, media_id, comment)
+        .then(function(response) {
+            callback(response);
+        })
+        .catch(function(error) {
+            console.log('Set comment error: ' + error);
+        });
+}
+
+/**
+ * get Message from API using promise.
+ * @param {object} session 
+ * @param {object} callback 
+ */
+function getResposerDataFromInbox(session, callback) {
+    var feed = new Client.Feed.Inbox(session);
+
+    var pFeed = new Promise(function(resolve, reject) {
+        return resolve(feed.get());
+    });
+
+    pFeed.then(function(results) {
+        var countResults = results.length;
+
+        async function getNewMessages() {
+            countResults--;
+            var userId;
+            var messageFromUser = '';
+            var responserId;
+
+
+            results[countResults].items.forEach(element => {
+                messageFromUser = element._params.text;
+                userId = element._params.userId;
+            });
+
+            results[countResults].accounts.forEach(element1 => {
+                responserId = element1.pk;
+            });
+          
+            if(userId == responserId) {
+                var replyData = {
+                    message: messageFromUser,
+                    id: responserId
+                }
+
+                callback(replyData);
+            }
+
+            if(countResults > 0) {
+                // setTimeout(getNewMessages, 3000);
+                getNewMessages();
+            }
+        }
+        getNewMessages();
+
+    });
+}
+
+/**
+ * Reply to user by responser id.
+ * @param {array} session 
+ * @param {integer} id 
+ * @param {string} message 
+ * @param {integer} callback 
+ */
+function replyToUserByRespnserId(session, id, message, callback) {
+    Client.Thread.configureText(session, id, message)
+        .then(function(response) {
+            for(var obj of response) {
+                var sendData = {
+                    id: obj.accounts[0].pk,
+                    name: obj.accounts[0].username
+                }
+                callback(sendData);
+            }
+        })
+        .catch(function(error) {
+            console.log('Direct Message error: ' + error);
+        });
+}
+
+/**
  * 
  * @param {INTEGER} botId 
- * @param {OBJECT} cb 
+ * @param {INTEGER} messagerId 
+ * @param {STRING} messagerName 
+ * @param {STRING} message 
+ * @param {INTEGER} replyId 
+ * @param {OBJECT} callback 
  */
-function getCommentByBotId(botId, cb) {
-    CommentModel.findAll({
-        where: {
-            botid: botId
-        }
-    }).then(function(comments) {
-        var arrComment = [];
-        for(var obj of comments) {
-            arrComment.push({
-                id: obj.dataValues.id,
-                comment: obj.dataValues.comment
-            });
-        }
-
-        cb(arrComment);
-
-        arrComment = [];
-    }).catch(function(error) {
-        console.log('Get comment error: ' + error);
-    });
-}
-
-/**
- * @description
- * Commit to post by media id
- * 
- * @param {OBJECT} session 
- * @param {INTEGER} id 
- * @param {STRING} comment 
- * @param {OBJECT} cb 
- */
-function commitByMediaId(session, id, comment, cb) {
-    Client.Comment.create(session, id, comment)
-        .then(function(result) {
-            cb(result);
-        })
-        .catch(function(error) {
-            console.log('Commit to post by media id error: ' + error);
-        });
-}
-
-/**
- * @description
- * Save comment history
- * 
- * @param {OBJECT} data 
- * @param {OBJECT} cb 
- */
-function saveCommentHistory(data, cb){
-    var newHistory = {
-        botid: data.botId,
-        hashtag: data.hashtag,
-        mediaid: data.mediaId,
-        commentid: data.commentId
+function storeReplyDirectMessageHistory(botId, messagerId, messagerName, message, replyId, callback) {
+    var newResponseHitory = {
+        bot_id: botId,
+        messager_id: messagerId,
+        messager_name: messagerName,
+        message: message,
+        reply_id: replyId
     }
-
-    CommentHistoryModel.create(newHistory)
-        .then(function(result) {
-            cb(result);
+    
+    ResponseHistory.create(newResponseHitory)
+        .then(function(responseHistory) {
+            callback(responseHistory.dataValues);
         })
         .catch(function(error) {
-            console.log('Save comment history error: ' + error);
+            console.log('Save response history error: ' + error);
         });
 }
 
-// Export BotService module.
+/**
+ * Get all bot's detail.
+ * @param {array} callback 
+ */
+function getAllBotDetail(callback) {
+    BotModel.findAll({ where: { status: 1 } })
+        .then(function(bots) {
+            if (bots.length > 0) {
+                var countBots = bots.length;
+                var arrySendData = [];
+                async function insertBotDetail() {
+                    countBots--;
+                    
+                    var objSendData = {
+                        id: bots[countBots].dataValues.id,
+                        userId: bots[countBots].dataValues.user_id,
+                        botName: bots[countBots].dataValues.botname,
+                        accountName: bots[countBots].dataValues.name,
+                        password: bots[countBots].dataValues.password,
+                        delay: bots[countBots].dataValues.delay,
+                        filters: bots[countBots].dataValues.filters,
+                        comments: {},
+                        replies: {}
+
+                    }
+                    
+                    ReplyModel.findAll({where: { bot_id: bots[countBots].dataValues.id}})
+                        .then(function(replies) {
+                            var messages = [];
+                            for(var replyObj of replies) {
+                                messages.push({
+                                    id: replyObj.dataValues.id,
+                                    message: replyObj.dataValues.message
+                                });                            
+                            }
+                            objSendData.replies = messages;
+                            messages = [];
+
+                        })
+                        .catch(function(error) {
+                            console.log('Fetch Reply data error: ' + error);
+                        });
+
+                    CommentModel.findAll({ where: { bot_id: bots[countBots].dataValues.id } })
+                        .then(function(comments) {
+                            var arrComments = [];
+                            for(var obj of comments) {
+                                arrComments.push({
+                                    id: obj.dataValues.id,
+                                    comment: obj.dataValues.comment
+                                })
+                            }
+
+                            objSendData.comments = arrComments;
+                            arrComments = [];
+                        })
+                        .catch(function(error) {
+                            console.log('Fetch Comments data error: ' + error);
+                        });
+
+                    arrySendData.push(objSendData);
+
+                    if(countBots > 0) {
+                        insertBotDetail();
+                    } else {
+                        setTimeout(()=>{
+                            callback(arrySendData);
+
+                            arrySendData = [];
+                        }, 500);
+                    }
+                }
+                insertBotDetail();
+            } else {
+                callback([]);
+            }
+
+            
+        })
+        .catch(function(error) {
+            console.log('Get initialize bot data error: ' + error);
+        });
+}
+
+/**
+ * get reply history by botId
+ * @param {NUMBER} botId 
+ * @param {INTEGER} callback 
+ */
+function getReplyDirectMessageHistoryByBotId(botId, callback) {
+    ResponseHistory.findAndCountAll({
+        where: {
+            bot_id: botId
+        }
+    })
+    .then(function(result) {
+        callback(result.count);
+    })
+    .catch(function(error) {
+        console.log('Get Reply Direct Message History By Bot ID error: ' + error);
+    });
+
+}
+
+/**
+ * 
+ * @param {OBJECT} callback 
+ */
+
+
+
+function getDashboardDetails(callback) {
+    var selectQuery = 'select a.id, \
+                        a.botname, \
+                        c.id, \
+                        c.username,  \
+                        d.messager_id, \
+                        d.messager_name, \
+                        max(d."createdAt"), \
+                        count(d.message) \
+                    from public."Bots" a, \
+                    public."Replies" b, \
+                    public."Users" c, \
+                    public."ResponseHistories" d \
+                    where a.id = b.bot_id \
+                    and a.id = d.bot_id \
+                    and a.user_id = c.id \
+                    and c.id = ? \
+                    group by a.id, a.botname, c.id, c.username, d.messager_id, d.messager_name';
+
+    sequelize.query(selectQuery, { replacements: ['1'], type: sequelize.QueryTypes.SELECT })
+        .then(function(result) {
+            var sendData = [];
+            for(var obj of result) {
+                convertTime(obj.max, function(callback) {
+                    var last = callback;
+                    var sendObj = {
+                        id: obj.id,
+                        botName: obj.botname,
+                        messagerId: obj.messager_id,
+                        messagerName: obj.messager_name,
+                        last: last,
+                        count: obj.count
+                    }
+
+                    sendData.push(sendObj);
+                });
+            }
+            console.log(sendData);
+            callback(sendData);
+
+            sendData = [];
+        });
+}
+
+function getBotDirectMessageHistroy(botId, clientId, callback) {
+    var selectQuery =   'SELECT \
+                            a.id as "bot ID", \
+                            a.botname as botName, \
+                            d.messager_id, \
+                            d.messager_name, \
+                            d."createdAt", \
+                            d.message, \
+                            b.message as reply\
+                        FROM \
+                            public."Bots" a, \
+                            public."Replies"  b, \
+                            public."Users"       c,  \
+                            public."ResponseHistories" d \
+                        WHERE \
+                            a.id = b.bot_id \
+                            and a.id = d.bot_id \
+                            and a.user_id = c.id \
+                            and b.id = d.reply_id \
+                            and c.id = ? \
+                            and a.id = ? \
+                            and d.messager_id = ? \
+                        ORDER BY \
+                            d."createdAt"';
+    
+    sequelize.query(selectQuery, { replacements: ['1', botId, clientId ], type: sequelize.QueryTypes.SELECT})
+        .then(function(result) {
+            callback(result);
+        }).catch(function(error) {
+            console.log(' Get Bot Direct Message Error: ' + error); 
+        });
+}
+
+
+function convertTime(mili, callback) {
+    var delta = parseInt((parseInt(new Date().getTime()) - parseInt(new Date(mili).getTime())) / ( 1000 * 60 ));
+
+    if( delta < 60 ) {
+        callback(delta + ' minutes ago'); 
+    } else if( 60 < delta < 3600) {
+        delta = parseInt(delta / 60)
+        callback(delta + ' hours ago');
+    } else if( 3600 < delta < 86400 ) {
+        delta = parseInt(delta /  86400);
+        callback(delta + ' days ago');
+    }
+}
+
+// Export Bot Service module.
 module.exports = BotService;
