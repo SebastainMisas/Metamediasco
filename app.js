@@ -1,88 +1,77 @@
-require('dotenv').config({
-  path: `./env-files/${process.env.NODE_ENV || 'development'}.env`,
-});
+/**
+ * Application main file.
+ * app.js
+ * 
+ * created by super-sean
+ * version 1.1.1
+ */
 
-const express = require('express');
-const path = require('path');
-const expressLayouts = require('express-ejs-layouts');
-const cookieParser = require('cookie-parser');
-const session = require('express-session');
-const RedisStore = require('connect-redis')(session);
-var enforce = require('express-sslify');
+ 'use strict';
 
-const initAuthMiddleware = require('./features/login/init-auth-middleware');
-const indexRouter = require('./routes/index');
+// Import npm modules.
+var createError = require('http-errors');
+var express = require('express');
+var path = require('path');
+var cookieParser = require('cookie-parser');
+var logger = require('morgan');
+var ejs = require('ejs');
+var expressLayouts = require('express-ejs-layouts');
+var bodyParser = require('body-parser');
+var session = require('express-session');
+
+// Import main modules.
+var config = require('./config/env');
+var indexRouter = require('./routes/index');
+var usersRouter = require('./routes/users');
+var botRouter = require('./routes/bots');
+var boardRouter = require('./routes/board');
 var apiRouter = require('./routes/api');
-const redisStoreConfig = {
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-};
 
-if (process.env.REDIS_URL) {
-  redisStoreConfig.url = process.env.REDIS_URL; // this will use the REDIS_URL required for logging into the Redis addon provided by Heroku
-}
+// Initialize application.
+var app = express();
 
-if (process.env.REDIS_PASSWORD) {
-  redisStoreConfig.password = process.env.REDIS_PASSWORD; // this will use the REDIS_PASSWORD if required
-}
+// Set application send the request with HTTP.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "1";
 
-const redisStore = new RedisStore(redisStoreConfig);
-
-const staticFolder = process.env.NODE_ENV === 'development' ? 'public' : 'dist';
-const app = express();
-
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
+// View engine setup.
+app.engine('ejs', ejs.renderFile);
+app.set('views', path.join(__dirname, '/views'));
 app.set('view engine', 'ejs');
-app.use(express.static(__dirname + '/public'))
+
+// Set Development method.
+// app.use(logger('dev'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
+
+// Set Project structure.
+app.use(cookieParser())
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(expressLayouts);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-// app.use(express.static(path.join(__dirname, staticFolder)));
+// Set env for session.
+app.use(session(config.session));
 
-const { COOKIE_EXPIRATION_MS } = process.env;
-
-const options = {
-  store: redisStore,
-  secret: 'keyboard cat',
-  name: process.env.SESSION_COOKIE_NAME,
-  resave: false,
-  saveUninitialized: true,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    expires: Date.now() + parseInt(COOKIE_EXPIRATION_MS, 10),
-    maxAge: parseInt(COOKIE_EXPIRATION_MS, 10),
-  },
-}
-
-if(process.env.NODE_ENV === 'production')
-  app.use(enforce.HTTPS());
-  app.set('trust proxy', 1)
-
-app.use(session(options));
-
-initAuthMiddleware(app);
-
-// Middleware used for setting error and success messages as available in _ejs_ templates
-app.use((req, res, next) => {
-  if (req.session) {
-    res.locals.messages = req.session.messages;
-    res.locals.userInfo = req.session.userInfo;
-    req.session.messages = {};
-  }
-  next();
-});
-
+// Rendering routes using express router.
 app.use('/', indexRouter);
-// Bundle API routes.
+app.use('/user', usersRouter);
+app.use('/bot', botRouter);
 app.use('/api', apiRouter);
-
+app.use('/board', boardRouter);
 
 // catch 404 and forward to error handler
-app.use((req, res) => {
-  res.status(404).render('pages/404');
+app.use(function(req, res, next) {
+  next(createError(404));
+});
+
+// error handler
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
 });
 
 module.exports = app;

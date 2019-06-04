@@ -1,317 +1,246 @@
-# [Argon Dashboard Nodejs](https://argon-dashboard-nodejs.creative-tim.com/?ref=adn-readme) [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&logo=twitter)](https://twitter.com/home?status=Argon%20Dashboard%20Node.js%20is%20a%20Free%20Frontend%20Preset%20for%20Node.js%20%E2%9D%A4%EF%B8%8F%0Ahttps%3A//argon-dashboard-nodejs.creative-tim.com/%20%23bootstrap%20%23argon%20%23design%20%23dashboard%20%23nodejs%20%23freebie%20%20via%20%40CreativeTim)
+# [Instagram Direct Message Bot]() [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&logo=twitter)]()
 
 ![version](https://img.shields.io/badge/version-1.0.0-blue.svg)  ![license](https://img.shields.io/badge/license-MIT-blue.svg) [![GitHub issues open](https://img.shields.io/github/issues/creativetimofficial/argon-dashboard-nodejs.svg?maxAge=2592000)](https://github.com/creativetimofficial/argon-dashboard-nodejs/issues?q=is%3Aopen+is%3Aissue) [![GitHub issues closed](https://img.shields.io/github/issues-closed-raw/creativetimofficial/argon-dashboard-nodejs.svg?maxAge=2592000)](https://github.com/creativetimofficial/argon-dashboard-nodejs/issues?q=is%3Aissue+is%3Aclosed)
 
 ![Product Image](https://s3.amazonaws.com/creativetim_bucket/products/148/original/opt_ad_node_thumbnail.jpg)
 
-Start your development with a Bootstrap 4 Admin Dashboard built for Node.js framework, the newest go-to technology for top companies. [Creative Tim](https://www.creative-tim.com/) partnered with [Udevoffice](https://udevoffice.com/) to provide a fully coded “frontend + backend” solution for you. It features a huge number of components that can help you create amazing websites and brings with itself innumerable advantages: lightweight, fast, scalable and modern way to execute your next top app.
 
-**FULLY CODED COMPONENTS**
+## Introduction.
 
-Argon Dashboard Node is built with over frontend 100 individual components, giving you the freedom of choosing and combining. All components can take variations in colour, that you can easily modify using SASS files.
-You will save a lot of time going from prototyping to full-functional code, because all elements are implemented. This Dashboard is coming with prebuilt examples, so the development process is seamless, switching from our pages to the real website is very easy to be done.
-Every element has multiple states for colors, styles, hover, focus, that you can easily access and use.
-View all components [here](https://argon-dashboard-nodejs.creative-tim.com/docs/components/alerts?ref=adn-readme)
+This is Instagram Direct message bot for IG marketing with real user account. Main functions had been built by Node.js. Codebase look like :
 
-**COMPLEX DOCUMENTATION**
+1. **`Node.js`** (Back-end platform to integrate the npm modules)
+1. **`Express.js`** (Back-end framework to host the http server with `http` module.)
+1. **`Postgres `** (Main database to store all data and history from project.)
+1. **`Sequelize`** (Database management tools to excute the sql with `NoSQL` type of application)
+1. **`EJS`** (Front-end to disply the initialize data and validate all of event by using javascript.)
 
-Each element is well presented in a very complex documentation. You can check the components [here](https://argon-dashboard-nodejs.creative-tim.com/docs/components/alerts?ref=adn-readme) and the foundation [here](https://argon-dashboard-nodejs.creative-tim.com/docs/foundation/colors?ref=adn-readme)
+## Core modules and functions.
 
-**Example Pages**
+### Core modules:
+* Used npm modules like this:
+    * "bcrypt-nodejs": "0.0.3",
+    * "bluebird": "^3.5.4",
+    * "body-parser": "^1.19.0",
+    * "child_process": "^1.0.2",
+    * "cookie-parser": "~1.4.4",
+    * "debug": "~2.6.9",
+    * "ejs": "^2.6.1",
+    * "express": "~4.16.1",
+    * "express-ejs-layouts": "^2.5.0",
+    * "express-session": "^1.16.1",
+    * "http-errors": "~1.6.3",
+    * "instagram-private-api": "^0.10.1",
+    * "jsonwebtoken": "^8.5.1",
+    * "lodash": "^4.17.11",
+    * "morgan": "~1.9.1",
+    * "passport": "^0.4.0",
+    * "passport-jwt": "^4.0.0",
+    * "path": "^0.12.7",
+    * "pg": "^7.11.0",
+    * "pg-hstore": "^2.3.2",
+    * "sequelize": "^5.8.6"
+### Main techniques:
+* Used thread function and related function based core functions:
+    * Threading: child process fork function.
 
-If you want to get inspiration or just show something directly to your clients, you can jump start your development with our pre-built example pages. You will be able to quickly set up the basic structure for your web project.
-View example pages [here](https://argon-dashboard-nodejs.creative-tim.com/?ref=adn-readme)
+        Create bot by fork function:
+        ```javascript
+        arrBotProcess.push(fork(path.join(__dirname, '[process].js')));
+        arrBotProcessName.push(id);
 
+        arrBotProcess[botNum].on('message', function(data) {
+            if(data == 1) {
+                // Validation part.
+            }
+        });
 
-## Installation
+        arrBotProcess[botNum].send(sendData);
+        ```
+        Destroy bot by .kill() function:
+        ```javascript
+        for(var i = 0; i < arrBotProcessName.length; i++) {    
+            
+            if(arrBotProcessName[i] == id) {
+                arrBotProcess[i].kill(); // destroy bot by id
+                arrBotProcessName[i] = "###";
+            }
+        }
 
-1. You need `Node.js` (at least 10.x version) installed on your machine, if you don't have it, you should install it - download [link](https://nodejs.org/en/download/)
-2. [Clone the project from github](https://github.com/creativetimofficial/argon-dashboard-nodejs) or [download the archive](https://github.com/creativetimofficial/argon-dashboard-nodejs)
-3. `cd` to your downloaded Argon app
-4. Install necessary dependencies:
-    - **Via node `npm` package manager** - Run `npm install` on the project root
-    - **Via `yarn` package manager** - Run `yarn install` on the project root
+        // loop for bot list and pop empty bot
 
-## Configuration for PostgreSQL database and Redis data structure store
+        arrBotProcessBackup = [];
+        arrBotProcessNameBackup = [];
 
-##### Via Docker
+        for(var kk = 0; kk < arrBotProcessName.length; kk++)
+        {
+            if(arrBotProcessName[kk] != "###")
+            {
+                arrBotProcessBackup.push(arrBotProcess[kk]);
+                arrBotProcessNameBackup.push(arrBotProcessName[kk]);
+            }                            
+        }
+        
+        
+        // initialize and copy original thread array for bots with backup arraylist
+        
+        arrBotProcess = [];
+        arrBotProcessName = [];
 
-1. Install **Docker** on your machine
-2. Run `docker-compose up -d` in a terminal on the project root. This will start 3 containers:
-    - database(PostgreSQL) container;
-    - redis container - required for session management;
-    - haproxy container - required only for a staging/production setup;
+        arrBotProcess = arrBotProcessBackup.slice(0);
+        arrBotProcessName = arrBotProcessNameBackup.slice(0);
 
-##### Via another chosen solution.
+        ```
 
-1. Install your **PostgreSQL** database
-2. Install your **Redis** server
-3. Change connection configuration, from your root `cd` to `env-files` folder and change the following configurations with your own:
+    * Promising: get data from instagram using `instagram-private-api`.
 
-###### **For PostgreSQL connection:**
-1. Database connection via URL
+        Example for promise
+        ```javascript
+        var feed = new Client.Feed.Inbox(session);
+
+        var pFeed = new Promise(function(resolve) {
+            return resolve(feed.get());
+        });
+
+        pFeed.then(function(results) {
+            // manufactoring about results.
+        });
+        ```
+    * Recursive function for sysncronization.
+
+        Example for recursive fucntion.
+        ```javascript
+        async function getNewInbox() {
+            countResult--;
+
+            // manufactoring for recursive.
+
+            if(countResult > 0) {
+                getNewInbox();
+            }
+        }
+        getNewInbox();
+        ```
+
+## Project structure.
+### Building express application.
 ```bash
-DATABASE_URL=http://creativeTim:creativeTim@127.0.0.1:5432/creativeTim
-# Example: DATABASE_URL=http://<user>:<password>@<host>/<database_name>
+    express my-new-express-app
 ```
-2. Database connection via credentials
+### Sequelize model structuring
+Example of create model and migrate database.
 ```bash
-DATABASE_HOST=127.0.0.1
-DATABASE_PORT=5432
-DATABASE_NAME=creativeTim
-DATABASE_USER=creativeTim
-DATABASE_PASSWORD=creativeTim
+    sequelize init
+
+    sequelize model:create --name Bots --attributes name:string,filters:string,status:integer
+
+    sequelize db:migrate
 ```
-
-######  **For Redis connection:**
-1. REDIS connection via URL
-```bash
-REDIS_URL=redis://:@127.0.0.1:6379
-# Example: redis://:<password>@<host>:<port>
+### Project file structure.
 ```
-2. REDIS connection via credentials
-```bash
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
-REDIS_PASSWORD=
-```
-
-## Migrations and seeds
-
-1. For database tables structure, in the project root run: `npm run knex migrate:latest` or `yarn knex migrate:latest` if you are using `yarn` as the default package manager
-2. To create a default user, run: `npm run knex seed:run` or `yarn knex seed:run` if you are using `yarn` as the default package manager
-
-## Run the application
-
-1. For starting the application, the following script (defined in `package.json` under `scripts`) must be called:
-    - via **npm**: `npm run start` or `npm run dev` for starting the development environment, which has livereload enabled;
-    - via **yarn**: `yarn start` or `yarn dev` for starting the development environment, which has livereload enabled;
-
-
-## Usage
-
-Register a user or login using **admin@argon.com**:**secret** and start testing the preset (make sure to run the migrations and seeds for these credentials to be available).
-
-Besides the dashboard and the auth pages this preset also has an edit profile page.
-**NOTE**: _Keep in mind that all available features can be viewed once you login using the credentials provided above or by registering your own user._
-
-## Features
-
-In order to see the available features `cd` into `features` folder, and you will then find a folder for each of the available features, mostly each folder containing:
-
-- A `routes.js` file that usually contains the `GET` and `POST` requests, for example, the profile router looks like this:
-
-```javascript
-const { wrap } = require('async-middleware');
-
-const requestBodyValidation = require('./commands/verify-request-body');
-const updateUserInfo = require('./commands/update-user-info');
-const { loadPage } = require('./commands/profile');
-
-module.exports = (router, middlewares = []) => {
-  router.get('/profile', middlewares.map(middleware => wrap(middleware)), wrap(loadPage));
-  router.post('/update-profile-info', wrap(requestBodyValidation), wrap(updateUserInfo));
-
-  return router;
-};
-```
-
-- A `repository.js` file that contains feature database queries
-- A `commands` folder where you can find all feature functionality functions, for example the login template rendering which looks like this:
-
-```javascript
-function loadPage(req, res) {
-  debug('login:loadPage', req, res);
-  res.render('pages/login');
-}
-```
-- A `constants.js` file, to store all your static variables, for eg:
-
-```
-const USERNAME_PASSWORD_COMBINATION_ERROR = 'These credentials do not match our records.';
-const INTERNAL_SERVER_ERROR = 'Something went wrong! Please try again.';
-```
-
-All feature routes are mounted in `routes/index.js` from the project root.
-
-## For the Front-end side:
-
-##### Templates
-
-- You can find all the templates in `views` folder where you will find:
-1. The `layout.ejs` file, the main template layout.
-2. A `pages` folder with all the page templates
-3. A `partials` folder with the common components (header, footer, sidebar)
-
-## Table of Contents
-
-* [Versions](#versions)
-* [Demo](#demo)
-* [Documentation](#documentation)
-* [File Structure](#file-structure)
-* [Browser Support](#browser-support)
-* [Resources](#resources)
-* [Reporting Issues](#reporting-issues)
-* [Licensing](#licensing)
-* [Useful Links](#useful-links)
-
-## Versions
-
-[<img src="https://github.com/creativetimofficial/public-assets/blob/master/logos/html-logo.jpg?raw=true" width="60" height="60" />](https://demos.creative-tim.com/argon-dashboard/index.html?ref=adn-readme)
-[<img src="https://github.com/creativetimofficial/public-assets/blob/master/logos/nodejs-logo.jpg?raw=true" width="60" height="60" />](https://argon-dashboard-nodejs.creative-tim.com/?ref=adn-readme)
-
-| HTML | NODEJS |
-| --- | --- |
-| [![Argon Dashboard HTML](https://s3.amazonaws.com/creativetim_bucket/products/96/original/opt_ad_thumbnail.jpg)](https://demos.creative-tim.com/argon-dashboard/index.html?ref=adn-readme) | [![Argon Dashboard Node](https://s3.amazonaws.com/creativetim_bucket/products/148/original/opt_ad_node_thumbnail.jpg)](https://argon-dashboard-nodejs.creative-tim.com/?ref=adn-readme)
-
-## Demo
-
-| Register | Login | Dashboard |
-| --- | --- | ---  |
-| [![Register](https://github.com/creativetimofficial/public-assets/blob/master/argon-dashboard-nodejs/argon_nodejs_1.jpg?raw=true)](https://argon-dashboard-nodejs.creative-tim.com/register?ref=adn-readme)  | [![Login](https://github.com/creativetimofficial/public-assets/blob/master/argon-dashboard-nodejs/argon_nodejs_7.jpg?raw=true)](https://argon-dashboard-nodejs.creative-tim.com/login?ref=adn-readme)  | [![Dashboard](https://github.com/creativetimofficial/public-assets/blob/master/argon-dashboard-nodejs/argon_nodejs_2.jpg?raw=true)](https://argon-dashboard-nodejs.creative-tim.com/?ref=adn-readme)
-
-| Profile Page | Icons Page | Profile Page  |
-| --- | --- | ---  |
-| [![Profile Page](https://github.com/creativetimofficial/public-assets/blob/master/argon-dashboard-nodejs/argon_nodejs_3.jpg?raw=true)](https://argon-dashboard-nodejs.creative-tim.com/profile?ref=adn-readme)  | [![Icons Page](https://github.com/creativetimofficial/public-assets/blob/master/argon-dashboard-nodejs/argon_nodejs_4.jpg?raw=true)](https://argon-dashboard-nodejs.creative-tim.com/icons?ref=adn-readme)  | [![Tables Page](https://github.com/creativetimofficial/public-assets/blob/master/argon-dashboard-nodejs/argon_nodejs_6.jpg?raw=true)](https://argon-dashboard-nodejs.creative-tim.com/tables?ref=adn-readme)
-[View More](https://argon-dashboard-nodejs.creative-tim.com/?ref=adn-readme)
-
-## Documentation
-The documentation for the Argon Dashboard Node is hosted at our [website](https://argon-dashboard-nodejs.creative-tim.com/docs/getting-started/overview.html?ref=adn-readme).
-
-## File Structure
-
-```
-├── CHANGELOG.md
-├── ISSUES_TEMPLATE.md
-├── LICENSE.md
-├── README.md
-├── app.js
+.
 ├── bin
 │   └── www
 ├── config
-│   └── index.js
-├── db
-│   ├── index.js
-│   ├── knexfile.js
-│   ├── migrations
-│   │   └── 20190213122702_create-users-table.js
-│   └── seeds
-│       └── create-default-user.js
-├── docker-compose.yml
-├── docs
-│   └── documentation.html
-├── ecosystem.config.js
-├── env-files
-│   ├── development.env
-│   └── production.env
-├── features
-│   ├── login
-│   │   ├── commands
-│   │   │   ├── load-page.js
-│   │   │   ├── login.js
-│   │   │   ├── redirect-to-dashboard.js
-│   │   │   └── verify-request-body.js
-│   │   ├── constants.js
-│   │   ├── init-auth-middleware.js
-│   │   ├── repository.js
-│   │   └── routes.js
-│   ├── logout
-│   │   ├── commands
-│   │   │   └── logout.js
-│   │   └── routes.js
-│   ├── profile
-│   │   ├── commands
-│   │   │   ├── load-page.js
-│   │   │   ├── update-user-info.js
-│   │   │   └── verify-request-body.js
-│   │   ├── constants.js
-│   │   ├── repository.js
-│   │   └── routes.js
-│   ├── register
-│   │   ├── commands
-│   │   │   ├── create-user.js
-│   │   │   ├── load-page.js
-│   │   │   └── verify-request-body.js
-│   │   ├── constants.js
-│   │   ├── repository.js
-│   │   └── routes.js
-│   └── reset-password
-│       ├── commands
-│       │   └── load-page.js
-│       └── routes.js
-├── gulpfile.js
-├── haproxy.cfg
-├── logger.js
-├── package.json
+│   ├── config.json
+│   └── env.js
+├── controllers
+│   ├── apiController.js
+│   ├── boardController.js
+│   ├── botController.js
+│   ├── newBotProcess.js
+│   └── userController.js
+├── cookies
+│   ├── gamer.wraps.json
+│   └── super-sean.json
+├── migrations
+├── models
+│   └── 20190530173910-create-user.js
+├── node_modules
 ├── public
-│   ├── css
-│   │   ├── argon.css
-│   │   └── argon.min.css
-│   ├── fonts
-│   │   └── nucleo
-│   ├── img
-│   │   ├── brand
-│   │   ├── icons
-│   │   └── theme
-│   ├── js
-│   │   ├── argon.js
-│   │   └── argon.min.js
-│   ├── scss
-│   │   ├── argon.scss
-│   │   ├── bootstrap
-│   │   ├── core
-│   │   └── custom
-│   └── vendor
+│   ├── app
+│   │   ├── css
+│   │   └── js
+│   └── assets
+│   │   ├── fonts
+│   │   ├── images
+│   │   ├── javascripts
+│   │   └── stylesheets
 ├── routes
-│   └── index.js
-├── screens
-│   ├── Dashboard.png
-│   ├── Login.png
-│   ├── Profile.png
-│   └── Users.png
+│   ├── api.js
+│   ├── board.js
+│   ├── bots.js
+│   ├── index.js
+│   └── users.js
+├── seeders
+├── services
+│   ├── botService.js
+│   ├── dashBoardService.js
+│   └── passport.js
 ├── views
-│   ├── layout.ejs
 │   ├── pages
-│   │   ├── 404.ejs
+│   │   ├── allbots.ejs
+│   │   ├── connect.ejs
 │   │   ├── dashboard.ejs
-│   │   ├── icons.ejs
-│   │   ├── login.ejs
-│   │   ├── maps.ejs
-│   │   ├── profile.ejs
-│   │   ├── register.ejs
-│   │   ├── reset-password.ejs
-│   │   └── tables.ejs
-│   └── partials
-│       ├── auth
-│       │   ├── footer.ejs
-│       │   ├── header.ejs
-│       │   └── navbar.ejs
-│       ├── dropdown.ejs
-│       ├── footer.ejs
-│       ├── header.ejs
-│       ├── navbar.ejs
-│       └── sidebar.ejs
-└
+│   │   ├── signup.ejs
+│   │   └── login.ejs
+│   ├── partials
+│   │   ├── footer.ejs
+│   │   ├── header.ejs
+│   │   ├── scripts.ejs
+│   │   └── sidebar.ejs
+│   └── layout.ejs
+├── .sequelizerc
+├── package.json
+└── README.md
 ```
-## Browser Support
 
-At present, we officially aim to support the last two versions of the following browsers:
+### Environment requirements.
 
-<img src="https://github.com/creativetimofficial/public-assets/blob/master/logos/chrome-logo.png?raw=true" width="64" height="64"> <img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/firefox-logo.png" width="64" height="64"> <img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/edge-logo.png" width="64" height="64"> <img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/safari-logo.png" width="64" height="64"> <img src="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/logos/opera-logo.png" width="64" height="64">
+* Use:
+    * Install npm-installer (https://nodejs.org/en/download/current/).
+    * postgres installer (https://www.apachefriends.org/download.html).
+
+### Install global npm modules for migrate database.
+* Install nodemon
+```bash
+    npm install -g nodemon
+```
+* Install sequelize
+```bash
+    npm install -g sequelize-cli
+```
 
 
-## Resources
-- Demo: <https://argon-dashboard-nodejs.creative-tim.com/?ref=adn-readme>
-- Download Page: <https://www.creative-tim.com/product/argon-dashboard-nodejs?ref=adn-readme>
-- Documentation: <https://argon-dashboard-nodejs.creative-tim.com/docs/getting-started/overview.html?ref=adn-readme>
-- License Agreement: <https://www.creative-tim.com/license>
-- Support: <https://www.creative-tim.com/contact-us>
-- Issues: [Github Issues Page](https://github.com/creativetimofficial/argon-dashboard-nodejs/issues)
-- **Dashboards:**
+### How to excute this application?
+Follow this steps:
+```bash
+    # install node modules.
+    npm install
+    # database migrate.
+    sequelize db:migrate
+    # application start.
+    npm start
+```
 
-| HTML | NODEJS |
-| --- | --- |
-| [![Argon Dashboard HTML](https://s3.amazonaws.com/creativetim_bucket/products/96/original/opt_ad_thumbnail.jpg)](https://demos.creative-tim.com/argon-dashboard/index.html?ref=adn-readme) | [![Argon Dashboard Node](https://s3.amazonaws.com/creativetim_bucket/products/148/original/opt_ad_node_thumbnail.jpg)](https://argon-dashboard-nodejs.creative-tim.com/?ref=adn-readme)
+### UI desing assets..
+#### bootstrap 4 material
+https://fezvrasta.github.io/bootstrap-material-design/
+https://fezvrasta.github.io/bootstrap-material-design/docs/4.0/getting-started/introduction/
+
+#### Font-Awesome url
+https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons
+https://use.fontawesome.com/releases/v5.0.6/css/all.css
+https://material.io/tools/icons/?icon=insert_comment&style=outline
+https://www.woolha.com/tutorials/node-js-express-persistent-session-store-with-postgresql-sequelize
+
+### core modules
+    - child_process
+    - instagram-privat-api ^0.10.1
+    - sequelize
+    - pg, pg-hstore
+
+### issues
 
 ## Change log
 
@@ -367,3 +296,4 @@ Instagram: <https://www.instagram.com/CreativeTimOfficial?ref=adn-readme>
 
 - [Creative Tim](https://creative-tim.com/?ref=adn-readme)
 - [Under Development Office](https://udevoffice.com/ref=creativetim)
+   
