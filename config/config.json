@@ -2,22 +2,22 @@
   "development": {
     "username": "postgres",
     "password": "Rango941001top@@@",
-    "database": "instagram_dm_bot",
+    "database": "instagram_dev",
     "host": "127.0.0.1",
-    "port": "5433",
+    "port": "5432",
     "dialect": "postgres"
   },
   "test": {
     "username": "root",
-    "password": "",
-    "database": "instagram_dm_bot",
+    "password": "Rango941001top@@@",
+    "database": "instagram_dev",
     "host": "127.0.0.1",
     "dialect": "postgres"
   },
   "production": {
     "username": "root",
     "password": "",
-    "database": "instagram_dm_bot",
+    "database": "instagram_dev",
     "host": "127.0.0.1",
     "dialect": "postgres"
   }
